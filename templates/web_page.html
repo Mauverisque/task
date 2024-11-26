@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Items</title>
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        button {
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #fff;
+            padding: 4px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #ddd;
+        }
+
+        .list ul {
+            list-style: none;
+        }
+
+        .list {
+            line-height: 1.5;
+            padding: 6px;
+            margin: 4px;
+            border-radius: 4px;
+        }
+
+        .list.main {
+            width: 100%;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .list.b {
+            background-color: #666;
+        }
+
+        .list.f {
+            background-color: #777;
+        }
+
+        .list.r {
+            background-color: #888;
+        }
+
+        .list.e {
+            background-color: #999;
+        }
+
+        .list_elem.collapsable.collapsed::after {
+            content: " +";
+        }
+
+        .form {
+            position: sticky;
+            top: 20px;
+            color: #fff;
+            line-height: 1.5;
+            background-color: #666;
+            padding: 6px;
+            margin: 16px;
+            border-radius: 4px;
+        }
+
+        .form div {
+            background-color: #777;
+            line-height: 1.5;
+            padding: 6px;
+            margin: 4px;
+            border-radius: 4px;
+        }
+
+        .form.b {
+            background-color: #666;
+        }
+
+        .form.f {
+            background-color: #777;
+        }
+
+        .form.r {
+            background-color: #888;
+        }
+
+        .form.e {
+            background-color: #999;
+        }
+
+
+        .context_menu {
+            display: none;
+            position: absolute;
+            background-color: #222;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .context_menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .context_menu ul li {
+            font-size: 16px;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .context_menu ul li:hover {
+            background-color: #333;
+        }
+    </style>
+</head>
+
+<body style="font-family: Arial">
+    <h1>E-LOGBOOK</h1>
+    <hr>
+
+    <div class="container">
+        <!-- List with data_model's objects  -->
+        <div id="list" class="list main">
+            <ul>
+                {{ data_list | safe }}
+            </ul>
+        </div>
+
+        <!-- Item creation form -->
+        <div class="form">
+            <form id="input" action="/add_item" method="post" onsubmit="submitForm(event)">
+                <div class="form b">
+                    <label for="building">Building:</label><br>
+                    <input type="text" id="building" name="building" list="buildings" maxlength="32"
+                        onchange="updateFloorOptions()" required><br><br>
+                        
+                    <datalist id="buildings">
+                        {{ building_options | safe }}
+                    </datalist>
+
+                    <div class="form f">
+                        <label for="floor">Floor:</label><br>
+                        <input type="text" id="floor" name="floor" maxlength="32"
+                            onchange="updateRoomOptions()"><br><br>
+
+                        <div class="form r">
+                            <label for="room">Room:</label><br>
+                            <input type="text" id="room" name="room" maxlength="32" oninput="toggleRoomType()"><br>
+
+                            <div id="room_type_container" class="form r" style="display: none;">
+                                <input type="radio" id="industrial" name="room_type" value="industrial"
+                                    onchange="toggleEquipment()">
+                                <label for="industrial">Industrial</label><br>
+
+                                <input type="radio" id="auxiliary" name="room_type" value="auxiliary"
+                                    onchange="toggleEquipment()">
+                                <label for="auxiliary">Auxiliary</label><br>
+                                
+                                <input type="radio" id="other" name="room_type" value="other"
+                                    onchange="toggleEquipment()">
+                                <label for="other">Other</label><br>
+                            </div>
+
+                            <div id="equipment_container" class="form e" style="display: none;">
+                                <label for="equipment">Eqipment:</label><br>
+                                <input type="text" id="equipment" name="equipment" maxlength="32">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit">Add</button>
+            </form>
+        </div>
+        <hr>
+
+        <script>
+            // Function responsible for list collapsing
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].addEventListener("click", function (e) {
+                    const content = this.nextElementSibling;
+                    this.classList.toggle("collapsed");
+                    content.style.display = this.classList.contains("collapsed") ? "none" : "block";
+                });
+
+                elements[i].addEventListener("contextmenu", function (e) {
+                    showContextMenu(e, this);
+                });
+            }
+            
+            ////////////////////////////
+            // Context menu functions //
+            ////////////////////////////
+            const contextMenu = document.createElement("div");
+            contextMenu.classList.add("context_menu");
+            document.body.appendChild(contextMenu);
+
+            const menuItems = [
+                { text: "Rename", action: "rename" },
+                { text: "Delete", action: "delete" }
+            ];
+
+            const menuList = document.createElement("ul");
+            menuItems.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = item.text;
+                li.dataset.action = item.action;
+                menuList.appendChild(li);
+            });
+            contextMenu.appendChild(menuList);
+
+            function showContextMenu(e, targetElement) {
+                e.preventDefault();
+                contextMenu.style.display = "block";
+                contextMenu.style.left = `${e.pageX}px`;
+                contextMenu.style.top = `${e.pageY}px`;
+                contextMenu.targetElement = targetElement;
+            }
+
+            function hideContextMenu() {
+                contextMenu.style.display = "none";
+            }
+
+            const elements = document.getElementsByClassName("list_elem");
+            
+            contextMenu.addEventListener("click", async function (e) {
+                const action = e.target.dataset.action;
+                if (action === "rename") {
+                    const newName = prompt("Enter new name:");
+                    if (newName) {
+                        await renameItem(contextMenu.targetElement, newName);
+                    }
+                } else if (action === "delete") {
+                    if (confirm("Are you sure you want to delete this item?")) {
+                        await deleteItem(contextMenu.targetElement);
+                    }
+                }
+            });
+
+            async function renameItem(targetElement, newName) {
+                const itemType = targetElement.dataset.itemType;
+                const itemId = targetElement.dataset.itemId;
+
+                const response = await fetch("/rename_item", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: itemType, id: itemId, name: newName })
+                });
+
+                const result = await response.json();
+                if (result.status === "success") {
+                    targetElement.textContent = newName;
+                    if (["industrial", "auxiliary", "other"].includes(itemType)) {
+                        targetElement.textContent += ` (${itemType})`;
+                    }
+                    hideContextMenu();
+                }
+            }
+
+            async function deleteItem(targetElement) {
+                const itemType = targetElement.dataset.itemType;
+                const itemId = targetElement.dataset.itemId;
+
+                const response = await fetch("/delete_item", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: itemType, id: itemId })
+                });
+
+                const result = await response.json();
+                if (result.status === "success") {
+                    const container = targetElement.closest("div.list");
+                    if (container) {
+                        container.remove();
+                    }
+                    hideContextMenu();
+                }
+            }
+
+            // Hide context menu when clicked anywhere outside the context menu
+            document.addEventListener("click", function (e) {
+                if (!contextMenu.contains(e.target)) {
+                    hideContextMenu();
+                }
+            });
+
+            ///////////////////////////////
+            // Submission form functions //
+            ///////////////////////////////
+            async function submitForm(event) {
+                event.preventDefault();
+                const formData = new FormData(document.getElementById("input"));
+
+                try {
+                    const response = await fetch("/add_item", { method: "POST", body: formData });
+
+                    const result = await response.json();
+                    if (result.status == "success") {
+                        window.location.reload();
+                    } else {
+                        console.error("Error submitting form:", response.statusText);
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+
+            function toggleRoomType() {
+                const roomInput = document.getElementById("room");
+                const roomTypeContainer = document.getElementById("room_type_container");
+                const radioButtons = document.querySelectorAll("input[name='room_type']");
+
+                if (roomInput.value.trim() !== "") {
+                    roomTypeContainer.style.display = "block";
+                    radioButtons.forEach(radio => radio.required = true);
+                } else {
+                    roomTypeContainer.style.display = "none";
+                    radioButtons.forEach(radio => radio.required = false);
+                }
+            }
+
+            function toggleEquipment() {
+                const selectedRadio = document.querySelector("input[name='room_type']:checked");
+                const equipmentInput = document.getElementById("equipment");
+                const equipmentContainer = document.getElementById("equipment_container");
+
+                if (selectedRadio.value.trim() === "industrial") {
+                    equipmentContainer.style.display = "block";
+                    equipmentInput.required = true;
+                } else {
+                    equipmentContainer.style.display = "none";
+                    equipmentInput.required = false;
+                }
+            }
+            
+            // Adjusts requirement values based on filled data
+            document.getElementById("input").addEventListener("click", function (event) {
+                let building = document.getElementById("building").value;
+                let floor = document.getElementById("floor").value;
+                let room = document.getElementById("room").value;
+
+                if (building && !floor && room) {
+                    document.getElementById("floor").required = true;
+                    return;
+                } else {
+                    document.getElementById("floor").required = false;
+                    return;
+                }
+            });
+
+            // Adapts floor options based on building selected
+            async function updateFloorOptions() {
+                const buildingInput = document.getElementById("building");
+                const floorInput = document.getElementById("floor");
+                const buildingName = buildingInput.value;
+
+                if (!buildingName) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/get_floors?building_name=${buildingName}`);
+                    const floors = await response.json();
+
+                    const existingDatalist = document.getElementById("floor-options");
+                    if (existingDatalist) {
+                        existingDatalist.remove();
+                    }
+
+                    floorInput.value = ""
+                    const datalist = document.createElement("datalist");
+                    datalist.id = "floor-options";
+
+                    floors.forEach(floor => {
+                        const option = document.createElement("option");
+                        option.value = floor.name;
+                        datalist.appendChild(option);
+                    });
+
+                    floorInput.setAttribute("list", "floor-options");
+                    document.body.appendChild(datalist);
+                } catch (error) {
+                    console.error("Error fetching floors:", error);
+                }
+            }
+
+            // Adapts room options based on floor selected
+            async function updateRoomOptions() {
+                const floorInput = document.getElementById("floor");
+                const roomInput = document.getElementById("room");
+                const floorName = floorInput.value;
+
+                if (!floorName) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/get_rooms?floor_name=${floorName}`);
+                    const rooms = await response.json();
+
+                    const existingDatalist = document.getElementById("room-options");
+                    if (existingDatalist) {
+                        existingDatalist.remove();
+                    }
+
+                    roomInput.value = "";
+                    const datalist = document.createElement("datalist");
+                    datalist.id = "room-options";
+
+                    rooms.forEach(room => {
+                        const option = document.createElement("option");
+                        option.value = room.name;
+                        datalist.appendChild(option);
+                    });
+
+                    roomInput.setAttribute("list", "room-options");
+                    document.body.appendChild(datalist);
+
+                } catch (error) {
+                    console.error("Error fetching rooms:", error);
+                }
+            }
+        </script>
+</body>
+
+</html>
