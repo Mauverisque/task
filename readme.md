@@ -19,6 +19,7 @@ The system is designed to manage various types of rooms and equipment in a build
 
 ## Working with this Project
 
-- After pulling this project use `pip install -r requirements.txt` to install all the necessary libraries.
-- Run `main.py` file after which the SQLite database and the aiohttp web-service will instantiate
+- If needed create a virtual environment and activate it.
+- Use `pip install -r requirements.txt` to install all the necessary libraries.
+- Run `main.py` file after which the SQLite database and the aiohttp web-service will instantiate.
 - You can access the web-service by launching a browser of your choosing and opening `http://localhost:8080/` webpage
